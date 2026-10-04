@@ -1,0 +1,98 @@
+"""Application settings loaded from environment / `.env` via pydantic-settings.
+
+Settings are validated once at import time and exposed as a cached singleton
+through :func:`get_settings`. Import the module-level ``settings`` for convenience.
+"""
+
+from __future__ import annotations
+
+from functools import lru_cache
+from typing import Literal
+
+from pydantic import PostgresDsn, field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    """Typed, validated application configuration."""
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+        extra="ignore",
+    )
+
+    # --- Application ---
+    app_name: str = "Custom ILP ASE"
+    environment: Literal["development", "staging", "production"] = "development"
+    debug: bool = True
+    log_level: str = "INFO"
+    api_v1_prefix: str = "/api/v1"
+
+    # --- Database ---
+    database_url: str = "postgresql+asyncpg://ilp:ilp@localhost:5432/ilp_ase"
+    db_pool_size: int = 10
+    db_max_overflow: int = 20
+    db_echo: bool = False
+
+    # --- Security ---
+    secret_key: str = "change-me-to-a-long-random-string"
+
+    # --- Rafiki webhook (inbound) security ---
+    rafiki_webhook_secret: str = "change-me-shared-with-rafiki"
+    rafiki_webhook_signature_header: str = "x-signature"
+    rafiki_webhook_signature_version: str = "1"
+    rafiki_webhook_tolerance_seconds: int = 300
+
+    # --- Rafiki Admin API (outbound GraphQL) ---
+    rafiki_graphql_url: str = "http://localhost:3001/graphql"
+    rafiki_graphql_signature_secret: str | None = None
+    rafiki_graphql_signature_version: str = "1"
+    rafiki_tenant_id: str | None = None
+    rafiki_http_timeout_seconds: float = 30.0
+
+    # --- Default provisioning asset ---
+    default_asset_id: str | None = None
+    default_asset_code: str = "USD"
+    default_asset_scale: int = 2
+
+    # --- Wallet address base ---
+    wallet_address_base_url: str = "https://wallet.example"
+
+    # --- OpenTelemetry ---
+    otel_enabled: bool = False
+    otel_service_name: str = "custom-ilp-ase"
+    otel_exporter_otlp_endpoint: str = "http://localhost:4317"
+
+    @field_validator("database_url")
+    @classmethod
+    def _validate_database_url(cls, v: str) -> str:
+        """Ensure the DB URL uses an async driver SQLAlchemy understands."""
+        allowed_prefixes = ("postgresql+asyncpg://", "sqlite+aiosqlite://")
+        if not v.startswith(allowed_prefixes):
+            raise ValueError(
+                "DATABASE_URL must use an async driver, e.g. "
+                "'postgresql+asyncpg://…' or 'sqlite+aiosqlite://…'"
+            )
+        # Validate the Postgres shape when applicable (sqlite skips this).
+        if v.startswith("postgresql+asyncpg://"):
+            PostgresDsn(v.replace("+asyncpg", ""))
+        return v
+
+    @property
+    def is_production(self) -> bool:
+        return self.environment == "production"
+
+    @property
+    def is_sqlite(self) -> bool:
+        return self.database_url.startswith("sqlite")
+
+
+@lru_cache(maxsize=1)
+def get_settings() -> Settings:
+    """Return the cached settings singleton."""
+    return Settings()
+
+
+settings = get_settings()

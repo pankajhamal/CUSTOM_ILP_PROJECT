@@ -1,0 +1,60 @@
+# Local development stack: FastAPI ASE + PostgreSQL ledger + Jaeger (OTel).
+# Usage:
+#   cp .env.example .env   # then edit secrets
+#   docker compose up --build
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: ilp-ase-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ilp
+      POSTGRES_PASSWORD: ilp
+      POSTGRES_DB: ilp_ase
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ilp -d ilp_ase"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Jaeger all-in-one — receives OTLP traces and serves the UI on :16686.
+  jaeger:
+    image: jaegertracing/all-in-one:1.60
+    container_name: ilp-ase-jaeger
+    restart: unless-stopped
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "16686:16686"   # Jaeger UI
+      - "4317:4317"     # OTLP gRPC
+      - "4318:4318"     # OTLP HTTP
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ilp-ase-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      # Override hosts so containers talk over the compose network.
+      DATABASE_URL: postgresql+asyncpg://ilp:ilp@db:5432/ilp_ase
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4317
+    ports:
+      - "8000:8000"
+    # Apply migrations, then launch the API.
+    command: >
+      sh -c "alembic upgrade head &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000"
+
+volumes:
+  pgdata:
