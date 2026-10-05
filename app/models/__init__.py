@@ -1,10 +1,18 @@
 """SQLAlchemy ORM models.
 
-Phase 1 ships only the declarative ``Base`` and shared column types. Concrete
-models (users, wallets, ledger, webhook events) arrive in later phases; import
-them here as they land so Alembic autogenerate discovers their tables.
+Importing this package registers every model on ``Base.metadata`` (needed for
+Alembic autogenerate). Models are added phase by phase; import them here as they
+land.
 """
 
 from app.models.base import Base
+from app.models.ledger import AccountType, LedgerAccount, NormalBalance
+from app.models.user import User
 
-__all__ = ["Base"]
+__all__ = [
+    "Base",
+    "User",
+    "LedgerAccount",
+    "AccountType",
+    "NormalBalance",
+]

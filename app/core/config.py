@@ -9,7 +9,7 @@ from __future__ import annotations
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import PostgresDsn, field_validator
+from pydantic import AliasChoices, Field, PostgresDsn, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -40,16 +40,32 @@ class Settings(BaseSettings):
     secret_key: str = "change-me-to-a-long-random-string"
 
     # --- Rafiki webhook (inbound) security ---
-    rafiki_webhook_secret: str = "change-me-shared-with-rafiki"
+    # Env name matches Rafiki's RAFIKI_SIGNATURE_SECRET (old RAFIKI_WEBHOOK_SECRET
+    # still accepted) so the shared secret has one name on both sides.
+    rafiki_webhook_secret: str = Field(
+        default="change-me-shared-with-rafiki",
+        validation_alias=AliasChoices("RAFIKI_SIGNATURE_SECRET", "RAFIKI_WEBHOOK_SECRET"),
+    )
     rafiki_webhook_signature_header: str = "x-signature"
     rafiki_webhook_signature_version: str = "1"
     rafiki_webhook_tolerance_seconds: int = 300
 
     # --- Rafiki Admin API (outbound GraphQL) ---
+    # Env names match Rafiki's ADMIN_API_SECRET / ADMIN_SIGNATURE_VERSION /
+    # OPERATOR_TENANT_ID (old RAFIKI_GRAPHQL_* / RAFIKI_TENANT_ID still accepted).
     rafiki_graphql_url: str = "http://localhost:3001/graphql"
-    rafiki_graphql_signature_secret: str | None = None
-    rafiki_graphql_signature_version: str = "1"
-    rafiki_tenant_id: str | None = None
+    rafiki_graphql_signature_secret: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("ADMIN_API_SECRET", "RAFIKI_GRAPHQL_SIGNATURE_SECRET"),
+    )
+    rafiki_graphql_signature_version: str = Field(
+        default="1",
+        validation_alias=AliasChoices("ADMIN_SIGNATURE_VERSION", "RAFIKI_GRAPHQL_SIGNATURE_VERSION"),
+    )
+    rafiki_tenant_id: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("OPERATOR_TENANT_ID", "RAFIKI_TENANT_ID"),
+    )
     rafiki_http_timeout_seconds: float = 30.0
 
     # --- Default provisioning asset ---
