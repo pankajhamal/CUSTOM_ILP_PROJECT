@@ -5,7 +5,7 @@ Rafiki signs each webhook with an HMAC-SHA256 over ``"{timestamp}.{body}"`` wher
 ``canonicalize`` npm package Rafiki uses). The signature is delivered in a header
 shaped like Stripe's::
 
-    x-signature: t=1700000000000, v1=9f86d08...e7f
+    x-signature: t=1700000000000, v1=9f86d08...e7f"""  """
 
 This module recomputes that digest and compares it in constant time, and also
 enforces a timestamp tolerance window to limit replay attacks.
