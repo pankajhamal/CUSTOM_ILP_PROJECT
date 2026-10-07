@@ -46,9 +46,14 @@ services:
     env_file:
       - .env
     environment:
-      # Override hosts so containers talk over the compose network.
+      # Override hosts so the container reaches host/compose services, not itself.
       DATABASE_URL: postgresql+asyncpg://ilp:ilp@db:5432/ilp_ase
       OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4317
+      # The testnet Rafiki runs on the host; from inside a container `localhost`
+      # is the container itself, so reach the host's published :3011 via the gateway.
+      RAFIKI_GRAPHQL_URL: http://host.docker.internal:3011/graphql
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "8000:8000"
     # Apply migrations, then launch the API.

@@ -46,7 +46,8 @@ class Settings(BaseSettings):
         default="change-me-shared-with-rafiki",
         validation_alias=AliasChoices("RAFIKI_SIGNATURE_SECRET", "RAFIKI_WEBHOOK_SECRET"),
     )
-    rafiki_webhook_signature_header: str = "x-signature"
+    # Rafiki sends the webhook signature in the "rafiki-signature" header.
+    rafiki_webhook_signature_header: str = "rafiki-signature"
     rafiki_webhook_signature_version: str = "1"
     rafiki_webhook_tolerance_seconds: int = 300
 
@@ -80,6 +81,19 @@ class Settings(BaseSettings):
     otel_enabled: bool = False
     otel_service_name: str = "custom-ilp-ase"
     otel_exporter_otlp_endpoint: str = "http://localhost:4317"
+
+    @field_validator(
+        "default_asset_id",
+        "rafiki_tenant_id",
+        "rafiki_graphql_signature_secret",
+        mode="before",
+    )
+    @classmethod
+    def _blank_to_none(cls, v: object) -> object:
+        """Treat empty/whitespace env values (e.g. ``DEFAULT_ASSET_ID=``) as unset."""
+        if isinstance(v, str) and not v.strip():
+            return None
+        return v
 
     @field_validator("database_url")
     @classmethod

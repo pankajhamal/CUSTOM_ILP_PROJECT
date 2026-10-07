@@ -12,6 +12,7 @@ from app.models.base import Base, TimestampMixin, uuid_pk
 
 if TYPE_CHECKING:
     from app.models.ledger import LedgerAccount
+    from app.models.wallet import WalletAddress
 
 
 class User(Base, TimestampMixin):
@@ -26,6 +27,10 @@ class User(Base, TimestampMixin):
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
 
     ledger_accounts: Mapped[list["LedgerAccount"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    wallet_addresses: Mapped[list["WalletAddress"]] = relationship(
         back_populates="user",
         cascade="all, delete-orphan",
     )

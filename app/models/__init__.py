@@ -8,10 +8,12 @@ land.
 from app.models.base import Base
 from app.models.ledger import AccountType, LedgerAccount, NormalBalance
 from app.models.user import User
+from app.models.wallet import WalletAddress
 
 __all__ = [
     "Base",
     "User",
+    "WalletAddress",
     "LedgerAccount",
     "AccountType",
     "NormalBalance",

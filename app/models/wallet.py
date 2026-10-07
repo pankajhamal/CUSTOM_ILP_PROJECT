@@ -1,8 +1,47 @@
-"""Wallet addresses (payment pointers) mapped to Rafiki wallet-address IDs.
-
-Phase 1 stub. Later phase: define the ``WalletAddress`` ORM model — the public
-HTTPS address, owning user, the Rafiki ``walletAddressId``, and asset fields
-(code/scale). Register it in ``app.models.__init__``.
-"""
+"""Wallet addresses (payment pointers) mapped to Rafiki wallet-address IDs."""
 
 from __future__ import annotations
+
+import uuid
+from typing import TYPE_CHECKING
+
+from sqlalchemy import ForeignKey, Integer, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.models.base import GUID, Base, TimestampMixin, uuid_pk
+
+if TYPE_CHECKING:
+    from app.models.user import User
+
+
+class WalletAddress(Base, TimestampMixin):
+    """A user's public payment pointer and its Rafiki counterpart.
+
+    ``address`` is the canonical HTTPS URL (e.g. ``https://wallet.example/alice``);
+    ``rafiki_wallet_address_id`` is the UUID returned by Rafiki's
+    ``createWalletAddress`` mutation and used for all later Admin API calls.
+    It is nullable so a wallet can be created locally before Rafiki sync.
+    """
+
+    __tablename__ = "wallet_addresses"
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        GUID, ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+
+    address: Mapped[str] = mapped_column(String(512), unique=True, index=True, nullable=False)
+    public_name: Mapped[str | None] = mapped_column(String(128))
+
+    # Rafiki linkage
+    rafiki_wallet_address_id: Mapped[str | None] = mapped_column(
+        String(64), unique=True, index=True
+    )
+    asset_id: Mapped[str | None] = mapped_column(String(64))
+    asset_code: Mapped[str] = mapped_column(String(8), nullable=False)
+    asset_scale: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    user: Mapped["User"] = relationship(back_populates="wallet_addresses")
+
+    def __repr__(self) -> str:  # pragma: no cover - debugging aid
+        return f"<WalletAddress {self.address!r}>"
