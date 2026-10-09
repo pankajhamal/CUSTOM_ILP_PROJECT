@@ -31,13 +31,7 @@ async def create_wallet(
     session: DBSession,
     rafiki: RafikiDep,
 ) -> WalletAddress:
-    """Create the user's public payment pointer and sync it with Rafiki.
-
-    Builds ``{WALLET_ADDRESS_BASE_URL}/{username}``, calls Rafiki's
-    ``createWalletAddress`` (when an asset id is available), and persists the
-    returned ``walletAddressId`` mapped to the user. If no asset id is configured
-    the wallet is created locally only (useful for dev before Rafiki is wired up).
-    """
+    """Create wallet address through Rafiki and presist mapping locally"""
     user = await session.get(User, payload.user_id)
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
@@ -47,7 +41,7 @@ async def create_wallet(
     asset_scale = (
         payload.asset_scale if payload.asset_scale is not None else settings.default_asset_scale
     )
-    address = f"{settings.wallet_address_base_url.rstrip('/')}/{user.username}"
+    # address = f"{settings.wallet_address_base_url.rstrip('/')}/{user.username}"
 
     rafiki_wallet_address_id: str | None = None
     if asset_id:

@@ -34,13 +34,7 @@ async def _load_user_with_accounts(session, user_id: uuid.UUID) -> User | None:
     summary="Register a new account holder",
 )
 async def create_user(payload: UserCreate, session: DBSession) -> User:
-    """Create a user and provision their internal ledger accounts.
-
-    Provisioning step 1: the local user plus the credit-normal ``available`` /
-    ``reserved`` liability accounts. (Rafiki wallet-address creation is a later
-    phase.) The user and accounts are committed atomically — if account
-    provisioning fails, the user is not created.
-    """
+    """User Register"""
     user = User(
         username=payload.username,
         email=payload.email,

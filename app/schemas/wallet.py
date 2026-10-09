@@ -9,20 +9,13 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class WalletAddressCreate(BaseModel):
-    """Payload to provision a wallet address for an existing user.
+    """Payload to provision a wallet address for an existing user."""
 
-    Asset fields are optional; **leave them unset** to use the server's configured
-    default asset (``DEFAULT_ASSET_ID`` etc.). Only pass ``asset_id`` if you mean a
-    specific Rafiki asset — a value Rafiki doesn't know yields an "unknown asset" error.
-    """
-
-    # The Swagger "Try it out" example only shows the minimal body, so users don't
-    # accidentally submit a placeholder asset_id.
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "user_id": "11111111-1111-1111-1111-111111111111",
-                "public_name": "Alice",
+                "user_id": "123456",
+                "public_name": "Pankaj",
             }
         }
     )

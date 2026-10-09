@@ -22,6 +22,18 @@ services:
       timeout: 5s
       retries: 10
 
+  # DBeaver web interface for database management
+  cloudbeaver:
+    image: dbeaver/cloudbeaver:latest
+    container_name: ilp-ase-dbeaver
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8978:8978"
+    volumes:
+      - cloudbeaver_data:/opt/cloudbeaver/workspace
   # Jaeger all-in-one — receives OTLP traces and serves the UI on :16686.
   jaeger:
     image: jaegertracing/all-in-one:1.60
@@ -46,20 +58,18 @@ services:
     env_file:
       - .env
     environment:
-      # Override hosts so the container reaches host/compose services, not itself.
       DATABASE_URL: postgresql+asyncpg://ilp:ilp@db:5432/ilp_ase
       OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4317
-      # The testnet Rafiki runs on the host; from inside a container `localhost`
-      # is the container itself, so reach the host's published :3011 via the gateway.
       RAFIKI_GRAPHQL_URL: http://host.docker.internal:3011/graphql
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
       - "8000:8000"
-    # Apply migrations, then launch the API.
+    volumes:
+    - .:/app
+    - /app/.venv
     command: >
-      sh -c "alembic upgrade head &&
-             uvicorn app.main:app --host 0.0.0.0 --port 8000"
-
+      sh -c "alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
 volumes:
   pgdata:
+  cloudbeaver_data:

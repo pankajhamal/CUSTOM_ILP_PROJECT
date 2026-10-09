@@ -11,7 +11,7 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field
 class UserCreate(BaseModel):
     """Payload to register a new account holder."""
 
-    username: str = Field(min_length=3, max_length=64, pattern=r"^[a-z0-9_.-]+$")
+    username: str = Field(min_length=3, max_length=64)
     email: EmailStr | None = None
     password: str = Field(min_length=8, max_length=128)
 

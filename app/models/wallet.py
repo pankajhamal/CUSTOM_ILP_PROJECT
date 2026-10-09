@@ -15,13 +15,7 @@ if TYPE_CHECKING:
 
 
 class WalletAddress(Base, TimestampMixin):
-    """A user's public payment pointer and its Rafiki counterpart.
-
-    ``address`` is the canonical HTTPS URL (e.g. ``https://wallet.example/alice``);
-    ``rafiki_wallet_address_id`` is the UUID returned by Rafiki's
-    ``createWalletAddress`` mutation and used for all later Admin API calls.
-    It is nullable so a wallet can be created locally before Rafiki sync.
-    """
+    """A user wallet address synchronized with Rafiki wallet address"""
 
     __tablename__ = "wallet_addresses"
 
@@ -30,16 +24,12 @@ class WalletAddress(Base, TimestampMixin):
         GUID, ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False
     )
 
-    address: Mapped[str] = mapped_column(String(512), unique=True, index=True, nullable=False)
-    public_name: Mapped[str | None] = mapped_column(String(128))
+    wallet_address: Mapped[str] = mapped_column(String(512), unique=True, index=True, nullable=False)
 
-    # Rafiki linkage
-    rafiki_wallet_address_id: Mapped[str | None] = mapped_column(
-        String(64), unique=True, index=True
-    )
-    asset_id: Mapped[str | None] = mapped_column(String(64))
+    #Rafiki wallet_address_id
+    rafiki_wallet_address_id: Mapped[str] = mapped_column(String(64), unique=True, index=True, nullable=False)
     asset_code: Mapped[str] = mapped_column(String(8), nullable=False)
-    asset_scale: Mapped[int] = mapped_column(Integer, nullable=False)
+    asset_scale: Mapped[int] = mapped_column(String(8), nullable=False)
 
     user: Mapped["User"] = relationship(back_populates="wallet_addresses")
 

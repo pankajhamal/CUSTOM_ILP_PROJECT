@@ -54,10 +54,10 @@ class Settings(BaseSettings):
     # --- Rafiki Admin API (outbound GraphQL) ---
     # Env names match Rafiki's ADMIN_API_SECRET / ADMIN_SIGNATURE_VERSION /
     # OPERATOR_TENANT_ID (old RAFIKI_GRAPHQL_* / RAFIKI_TENANT_ID still accepted).
-    rafiki_graphql_url: str = "http://localhost:3001/graphql"
+    rafiki_graphql_url: str = "http://localhost:3011/graphql"
     rafiki_graphql_signature_secret: str | None = Field(
         default=None,
-        validation_alias=AliasChoices("ADMIN_API_SECRET", "RAFIKI_GRAPHQL_SIGNATURE_SECRET"),
+        validation_alias=AliasChoices("ADMIN_API_SECRET", "RAFIKI_SIGNATURE_SECRET"),
     )
     rafiki_graphql_signature_version: str = Field(
         default="1",
