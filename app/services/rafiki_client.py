@@ -134,8 +134,6 @@ class RafikiClient:
         """Create a wallet address; returns ``{id, address, publicName}``."""
         variables = {
             "input": {
-                "assetId": asset_id,
-                "address": address,
                 "publicName": public_name,
             }
         }
