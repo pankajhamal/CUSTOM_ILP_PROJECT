@@ -80,7 +80,7 @@ class LedgerAccount(Base, TimestampMixin):
     debits_posted: Mapped[int] = mapped_column(Amount, default=0, nullable=False)
     credits_posted: Mapped[int] = mapped_column(Amount, default=0, nullable=False)
 
-    user: Mapped["User | None"] = relationship(back_populates="ledger_accounts")
+    user: Mapped[User | None] = relationship(back_populates="ledger_accounts")
 
     __table_args__ = (
         CheckConstraint("debits_posted >= 0", name="debits_non_negative"),

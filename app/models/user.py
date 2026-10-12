@@ -26,11 +26,11 @@ class User(Base, TimestampMixin):
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
 
-    ledger_accounts: Mapped[list["LedgerAccount"]] = relationship(
+    ledger_accounts: Mapped[list[LedgerAccount]] = relationship(
         back_populates="user",
         cascade="all, delete-orphan",
     )
-    wallet_addresses: Mapped[list["WalletAddress"]] = relationship(
+    wallet_addresses: Mapped[list[WalletAddress]] = relationship(
         back_populates="user",
         cascade="all, delete-orphan",
     )

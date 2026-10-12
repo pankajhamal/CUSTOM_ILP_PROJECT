@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, Integer, String
+from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import GUID, Base, TimestampMixin, uuid_pk
@@ -24,14 +24,18 @@ class WalletAddress(Base, TimestampMixin):
         GUID, ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False
     )
 
-    wallet_address: Mapped[str] = mapped_column(String(512), unique=True, index=True, nullable=False)
+    wallet_address: Mapped[str] = mapped_column(
+        String(512), unique=True, index=True, nullable=False
+    )
 
-    #Rafiki wallet_address_id
-    rafiki_wallet_address_id: Mapped[str] = mapped_column(String(64), unique=True, index=True, nullable=False)
+    # Rafiki wallet_address_id
+    rafiki_wallet_address_id: Mapped[str] = mapped_column(
+        String(64), unique=True, index=True, nullable=False
+    )
     asset_code: Mapped[str] = mapped_column(String(8), nullable=False)
     asset_scale: Mapped[int] = mapped_column(String(8), nullable=False)
 
-    user: Mapped["User"] = relationship(back_populates="wallet_addresses")
+    user: Mapped[User] = relationship(back_populates="wallet_addresses")
 
     def __repr__(self) -> str:  # pragma: no cover - debugging aid
         return f"<WalletAddress {self.address!r}>"

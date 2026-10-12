@@ -23,9 +23,7 @@ class LedgerService:
         self.session = session
 
     async def get_account_by_name(self, name: str) -> LedgerAccount | None:
-        result = await self.session.execute(
-            select(LedgerAccount).where(LedgerAccount.name == name)
-        )
+        result = await self.session.execute(select(LedgerAccount).where(LedgerAccount.name == name))
         return result.scalar_one_or_none()
 
     async def create_account(

@@ -61,7 +61,9 @@ class Settings(BaseSettings):
     )
     rafiki_graphql_signature_version: str = Field(
         default="1",
-        validation_alias=AliasChoices("ADMIN_SIGNATURE_VERSION", "RAFIKI_GRAPHQL_SIGNATURE_VERSION"),
+        validation_alias=AliasChoices(
+            "ADMIN_SIGNATURE_VERSION", "RAFIKI_GRAPHQL_SIGNATURE_VERSION"
+        ),
     )
     rafiki_tenant_id: str | None = Field(
         default=None,

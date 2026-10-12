@@ -49,6 +49,4 @@ def setup_telemetry(app) -> None:  # noqa: ANN001 (FastAPI app, avoid import cyc
     from app.core.database import engine
 
     SQLAlchemyInstrumentor().instrument(engine=engine.sync_engine)
-    logger.info(
-        "OpenTelemetry enabled; exporting to %s", settings.otel_exporter_otlp_endpoint
-    )
+    logger.info("OpenTelemetry enabled; exporting to %s", settings.otel_exporter_otlp_endpoint)

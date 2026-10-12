@@ -14,7 +14,11 @@ router = APIRouter()
 @router.get("/health", summary="Liveness probe")
 async def health() -> dict:
     """Return 200 if the process is up."""
-    return {"status": "ok", "service": settings.otel_service_name, "environment": settings.environment}
+    return {
+        "status": "ok",
+        "service": settings.otel_service_name,
+        "environment": settings.environment,
+    }
 
 
 @router.get("/health/ready", summary="Readiness probe")
