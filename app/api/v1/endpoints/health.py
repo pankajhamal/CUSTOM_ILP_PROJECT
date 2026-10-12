@@ -16,8 +16,8 @@ async def health() -> dict:
     """Return 200 if the process is up."""
     return {
         "status": "ok",
-        "service": settings.otel_service_name,
-        "environment": settings.environment,
+        "service": settings.OTEL_SERVICE_NAME,
+        "environment": settings.ENVIRONMENT,
     }
 
 

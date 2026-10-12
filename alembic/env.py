@@ -17,8 +17,7 @@ from app.models import Base  # noqa: E402
 config = context.config
 
 # Inject the runtime DB URL (kept out of alembic.ini / version control).
-config.set_main_option("sqlalchemy.url", settings.database_url)
-
+config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
@@ -33,7 +32,7 @@ def run_migrations_offline() -> None:
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
         compare_type=True,
-        render_as_batch=settings.is_sqlite,
+        render_as_batch=settings.IS_SQLITE,
     )
     with context.begin_transaction():
         context.run_migrations()
@@ -45,7 +44,7 @@ def _do_run_migrations(connection) -> None:
         target_metadata=target_metadata,
         compare_type=True,
         # batch mode is required for ALTER on SQLite.
-        render_as_batch=settings.is_sqlite,
+        render_as_batch=settings.IS_SQLITE,
     )
     with context.begin_transaction():
         context.run_migrations()

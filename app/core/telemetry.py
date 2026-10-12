@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 def setup_telemetry(app) -> None:  # noqa: ANN001 (FastAPI app, avoid import cycle)
     """Instrument the FastAPI app if ``OTEL_ENABLED`` is set; otherwise no-op."""
-    if not settings.otel_enabled:
+    if not settings.OTEL_ENABLED:
         logger.info("OpenTelemetry disabled (OTEL_ENABLED=false).")
         return
 
@@ -35,11 +35,11 @@ def setup_telemetry(app) -> None:  # noqa: ANN001 (FastAPI app, avoid import cyc
         logger.warning("OpenTelemetry packages missing; skipping instrumentation.")
         return
 
-    resource = Resource.create({"service.name": settings.otel_service_name})
+    resource = Resource.create({"service.name": settings.OTEL_SERVICE_NAME})
     provider = TracerProvider(resource=resource)
     provider.add_span_processor(
         BatchSpanProcessor(
-            OTLPSpanExporter(endpoint=settings.otel_exporter_otlp_endpoint, insecure=True)
+            OTLPSpanExporter(endpoint=settings.OTEL_EXPORTER_OTLP_ENDPOINT, insecure=True)
         )
     )
     trace.set_tracer_provider(provider)
@@ -49,4 +49,4 @@ def setup_telemetry(app) -> None:  # noqa: ANN001 (FastAPI app, avoid import cyc
     from app.core.database import engine
 
     SQLAlchemyInstrumentor().instrument(engine=engine.sync_engine)
-    logger.info("OpenTelemetry enabled; exporting to %s", settings.otel_exporter_otlp_endpoint)
+    logger.info("OpenTelemetry enabled; exporting to %s", settings.OTEL_EXPORTER_OTLP_ENDPOINT)

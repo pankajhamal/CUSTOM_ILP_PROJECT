@@ -13,7 +13,7 @@ from app.core.database import dispose_engine
 from app.core.telemetry import setup_telemetry
 
 logging.basicConfig(
-    level=settings.log_level.upper(),
+    level=settings.LOG_LEVEL.upper(),
     format="%(asctime)s %(levelname)-8s %(name)s | %(message)s",
 )
 logger = logging.getLogger(__name__)
@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup/shutdown hooks."""
-    logger.info("Starting %s (env=%s)", settings.app_name, settings.environment)
+    logger.info("Starting %s (env=%s)", settings.APP_NAME, settings.ENVIRONMENT)
     yield
     logger.info("Shutting down; disposing database engine.")
     await dispose_engine()
@@ -30,7 +30,7 @@ async def lifespan(app: FastAPI):
 
 def create_app() -> FastAPI:
     app = FastAPI(
-        title=settings.app_name,
+        title=settings.APP_NAME,
         version="0.1.0",
         description=(
             "Account Servicing Entity for Interledger/Rafiki — double-entry ledger, "
@@ -42,7 +42,7 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
-    app.include_router(api_router, prefix=settings.api_v1_prefix)
+    app.include_router(api_router, prefix=settings.API_V1_PREFIX)
 
     # Instrument last so routes are registered before FastAPI instrumentation.
     setup_telemetry(app)

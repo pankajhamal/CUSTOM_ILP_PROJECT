@@ -23,9 +23,13 @@ import time
 from typing import Any
 
 import httpx
+import logging
 
 from app.core.config import settings
 from app.core.security import compute_digest
+
+
+logger = logging.getLogger(__name__)
 
 
 class RafikiClientError(Exception):
@@ -65,52 +69,82 @@ class RafikiClient:
 
     def __init__(self, client: httpx.AsyncClient | None = None) -> None:
         self._external_client = client
-        self._url = settings.rafiki_graphql_url
-        self._timeout = settings.rafiki_http_timeout_seconds
+        self._url = settings.RAFIKI_GRAPHQL_URL
+        self._timeout = 30.0
 
     # -- Transport ---------------------------------------------------------
 
     def _signed_headers(self, query: str, variables: dict) -> dict[str, str]:
         """Build headers, signing the request if an Admin API secret is set."""
         headers = {"content-type": "application/json"}
-        secret = settings.rafiki_graphql_signature_secret
+
+        secret = settings.RAFIKI_API_SECRET
+
         if secret:
             timestamp = int(time.time() * 1000)
-            # Must mirror Rafiki: canonicalize({variables, query}) (operationName
-            # omitted). compute_digest() does f"{ts}.{canonicalize(obj)}" + HMAC.
-            signed_obj = {"variables": variables or {}, "query": query}
+
+            # Sign the canonical GraphQL request.
+            signed_obj = {
+                "variables": variables or {},
+                "query": query,
+            }
+
             digest = compute_digest(signed_obj, secret, timestamp)
-            version = settings.rafiki_graphql_signature_version
+            version = settings.RAFIKI_GRAPHQL_SIGNATURE_VERSION
+
             headers["signature"] = f"t={timestamp}, v{version}={digest}"
-        if settings.rafiki_tenant_id:
-            headers["tenant-id"] = settings.rafiki_tenant_id
+
+        if settings.RAFIKI_TENANT_ID:
+            headers["tenant-id"] = settings.RAFIKI_TENANT_ID
+
         return headers
 
-    async def execute(self, query: str, variables: dict | None = None) -> dict[str, Any]:
-        """Run a GraphQL operation and return its ``data`` object."""
+    async def execute(
+        self,
+        query: str,
+        variables: dict | None = None,
+    ) -> dict[str, Any]:
+        """Run a GraphQL operation and return its data object."""
         variables = variables or {}
-        body = {"query": query, "variables": variables}
+
+        body = {
+            "query": query,
+            "variables": variables,
+        }
+
         headers = self._signed_headers(query, variables)
 
         client = self._external_client
         owns_client = client is None
+
         if client is None:
             client = httpx.AsyncClient(timeout=self._timeout)
+
         try:
-            response = await client.post(self._url, json=body, headers=headers)
+            response = await client.post(
+                self._url,
+                json=body,
+                headers=headers,
+            )
             response.raise_for_status()
             payload = response.json()
+
         except httpx.HTTPError as exc:
-            raise RafikiClientError(f"HTTP error calling Rafiki: {exc}") from exc
+            raise RafikiClientError(
+                f"HTTP error calling Rafiki: {exc}"
+            ) from exc
+
         finally:
             if owns_client:
                 await client.aclose()
 
         if payload.get("errors"):
             raise RafikiGraphQLError(payload["errors"])
+
         return payload.get("data") or {}
 
     async def aclose(self) -> None:
+        """Close the injected HTTP client, if one was provided."""
         if self._external_client is not None:
             await self._external_client.aclose()
 
@@ -127,17 +161,20 @@ class RafikiClient:
     async def create_wallet_address(
         self,
         *,
-        address: str,
         asset_id: str,
+        address: str,
         public_name: str | None = None,
     ) -> dict[str, Any]:
         """Create a wallet address; returns ``{id, address, publicName}``."""
         variables = {
             "input": {
+                "assetId": asset_id,
+                "address": address,
                 "publicName": public_name,
             }
         }
         data = await self.execute(_CREATE_WALLET_ADDRESS, variables)
+        logger.info("Response from rafiki :", data)
         wa = (data.get("createWalletAddress") or {}).get("walletAddress")
         if not wa:
             raise RafikiClientError("createWalletAddress returned no walletAddress")

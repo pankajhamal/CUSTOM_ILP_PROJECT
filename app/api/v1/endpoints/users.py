@@ -54,8 +54,8 @@ async def create_user(payload: UserCreate, session: DBSession) -> User:
     await ledger.ensure_user_accounts(
         user_id=user.id,
         username=user.username,
-        asset_code=settings.default_asset_code,
-        asset_scale=settings.default_asset_scale,
+        asset_code=settings.RAFIKI_ASSET_CODE,
+        asset_scale=settings.RAFIKI_ASSET_SCALE,
     )
 
     await session.commit()

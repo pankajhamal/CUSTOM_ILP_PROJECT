@@ -1,17 +1,11 @@
-"""Async SQLAlchemy engine and session factory.
 
-Exposes:
-  * ``engine``            — the process-wide AsyncEngine.
-  * ``AsyncSessionLocal`` — a sessionmaker bound to that engine.
-  * ``get_session``       — FastAPI dependency yielding a session (auto-rollback
-                            on error, close on exit).
-  * ``session_scope``     — an explicit async context manager for scripts/services.
-"""
+"""Async SQLAlchemy engine and session factory."""
 
 from __future__ import annotations
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from typing import Any
 
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
@@ -24,22 +18,28 @@ from app.core.config import settings
 
 
 def _build_engine() -> AsyncEngine:
-    """Create the async engine, applying pool settings only where supported."""
-    kwargs: dict = {
-        "echo": settings.db_echo,
+    """Create the async database engine."""
+    kwargs: dict[str, Any] = {
         "pool_pre_ping": True,
-        "future": True,
     }
-    # SQLite (used in tests) does not accept Postgres pool sizing args.
-    if not settings.is_sqlite:
-        kwargs["pool_size"] = settings.db_pool_size
-        kwargs["max_overflow"] = settings.db_max_overflow
 
-    return create_async_engine(settings.database_url, **kwargs)
+    # Connection pool settings are useful for PostgreSQL.
+    if not settings.IS_SQLITE:
+        kwargs["pool_size"] = 10
+        kwargs["max_overflow"] = 20
+
+    return create_async_engine(
+        settings.DATABASE_URL,
+        echo=settings.DEBUG,
+        **kwargs,
+    )
 
 
+# Database engine
 engine: AsyncEngine = _build_engine()
 
+
+# Database session factory
 AsyncSessionLocal: async_sessionmaker[AsyncSession] = async_sessionmaker(
     bind=engine,
     class_=AsyncSession,
@@ -49,7 +49,7 @@ AsyncSessionLocal: async_sessionmaker[AsyncSession] = async_sessionmaker(
 
 
 async def get_session() -> AsyncIterator[AsyncSession]:
-    """FastAPI dependency: yield a session, rolling back on unhandled errors."""
+    """FastAPI dependency that provides a database session."""
     async with AsyncSessionLocal() as session:
         try:
             yield session
@@ -60,7 +60,7 @@ async def get_session() -> AsyncIterator[AsyncSession]:
 
 @asynccontextmanager
 async def session_scope() -> AsyncIterator[AsyncSession]:
-    """Context manager for non-request code (scripts, startup tasks)."""
+    """Provide a session for scripts and background tasks."""
     async with AsyncSessionLocal() as session:
         try:
             yield session
@@ -71,5 +71,5 @@ async def session_scope() -> AsyncIterator[AsyncSession]:
 
 
 async def dispose_engine() -> None:
-    """Dispose the engine's connection pool (call on shutdown)."""
+    """Close database connections during application shutdown."""
     await engine.dispose()

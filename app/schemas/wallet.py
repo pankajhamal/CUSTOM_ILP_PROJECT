@@ -10,23 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class WalletAddressCreate(BaseModel):
     """Payload to provision a wallet address for an existing user."""
-
-    model_config = ConfigDict(
-        json_schema_extra={
-            "example": {
-                "user_id": "123456",
-                "public_name": "Pankaj",
-            }
-        }
-    )
-
     user_id: uuid.UUID
-    public_name: str | None = Field(default=None, max_length=128)
-    asset_id: str | None = Field(
-        default=None, description="Optional Rafiki asset id; omit to use DEFAULT_ASSET_ID."
-    )
-    asset_code: str | None = Field(default=None, max_length=8)
-    asset_scale: int | None = Field(default=None, ge=0, le=18)
 
 
 class WalletAddressRead(BaseModel):
