@@ -27,7 +27,7 @@ target_metadata = Base.metadata
 def run_migrations_offline() -> None:
     """Emit SQL to stdout without a live DB connection."""
     context.configure(
-        url=settings.database_url,
+        url=settings.DATABASE_URL,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},

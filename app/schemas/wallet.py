@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict
 
 
 class WalletAddressCreate(BaseModel):
@@ -20,10 +20,8 @@ class WalletAddressRead(BaseModel):
 
     id: uuid.UUID
     user_id: uuid.UUID
-    address: str
-    public_name: str | None = None
-    rafiki_wallet_address_id: str | None = None
-    asset_id: str | None = None
+    wallet_address: str
+    rafiki_wallet_address_id: str
     asset_code: str
-    asset_scale: int
+    asset_scale: str
     created_at: datetime

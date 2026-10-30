@@ -20,9 +20,11 @@ router = APIRouter()
 
 
 async def _load_user_with_accounts(session, user_id: uuid.UUID) -> User | None:
-    """Fetch a user with their ledger accounts eagerly loaded (async-safe)."""
+    """Fetch a user with accounts + wallets eagerly loaded (async-safe)."""
     result = await session.execute(
-        select(User).options(selectinload(User.ledger_accounts)).where(User.id == user_id)
+        select(User)
+        .options(selectinload(User.ledger_accounts), selectinload(User.wallet_addresses))
+        .where(User.id == user_id)
     )
     return result.scalar_one_or_none()
 

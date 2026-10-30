@@ -20,6 +20,7 @@ Mutations here use the exact field shapes from the live Rafiki schema:
 from __future__ import annotations
 
 import time
+import uuid
 from typing import Any
 
 import httpx
@@ -59,6 +60,59 @@ _CREATE_WALLET_ADDRESS = """
 mutation CreateWalletAddress($input: CreateWalletAddressInput!) {
   createWalletAddress(input: $input) {
     walletAddress { id address publicName }
+  }
+}
+"""
+
+_CREATE_RECEIVER = """
+mutation CreateReceiver($input: CreateReceiverInput!) {
+  createReceiver(input: $input) {
+    receiver { id walletAddressUrl }
+  }
+}
+"""
+
+_CREATE_QUOTE = """
+mutation CreateQuote($input: CreateQuoteInput!) {
+  createQuote(input: $input) {
+    quote {
+      id
+      walletAddressId
+      receiver
+      debitAmount { value assetCode assetScale }
+      receiveAmount { value assetCode assetScale }
+    }
+  }
+}
+"""
+
+_CREATE_OUTGOING_PAYMENT = """
+mutation CreateOutgoingPayment($input: CreateOutgoingPaymentInput!) {
+  createOutgoingPayment(input: $input) {
+    payment {
+      id
+      walletAddressId
+      state
+      receiver
+      debitAmount { value assetCode assetScale }
+    }
+  }
+}
+"""
+
+# Liquidity is event-based in this Rafiki: keyed by the webhook event id.
+_DEPOSIT_EVENT_LIQUIDITY = """
+mutation DepositEventLiquidity($eventId: String!, $idempotencyKey: String!) {
+  depositEventLiquidity(input: { eventId: $eventId, idempotencyKey: $idempotencyKey }) {
+    success
+  }
+}
+"""
+
+_WITHDRAW_EVENT_LIQUIDITY = """
+mutation WithdrawEventLiquidity($eventId: String!, $idempotencyKey: String!) {
+  withdrawEventLiquidity(input: { eventId: $eventId, idempotencyKey: $idempotencyKey }) {
+    success
   }
 }
 """
@@ -174,8 +228,93 @@ class RafikiClient:
             }
         }
         data = await self.execute(_CREATE_WALLET_ADDRESS, variables)
-        logger.info("Response from rafiki :", data)
+        logger.debug("Rafiki createWalletAddress response: %s", data)
         wa = (data.get("createWalletAddress") or {}).get("walletAddress")
         if not wa:
             raise RafikiClientError("createWalletAddress returned no walletAddress")
         return wa
+
+    # -- Outgoing payment flow ---------------------------------------------
+
+    async def create_receiver(
+        self,
+        *,
+        wallet_address_url: str,
+        incoming_amount: int | None = None,
+        asset_code: str | None = None,
+        asset_scale: int | None = None,
+        description: str | None = None,
+    ) -> dict[str, Any]:
+        """Create a receiver (incoming payment) at the destination wallet.
+
+        Returns the receiver; its ``id`` is the incoming-payment URL used as the
+        quote ``receiver``. For a fixed-send quote, leave ``incoming_amount`` unset.
+        """
+        input_obj: dict[str, Any] = {"walletAddressUrl": wallet_address_url}
+        if description is not None:
+            input_obj["metadata"] = {"description": description}
+        if incoming_amount is not None and asset_code and asset_scale is not None:
+            input_obj["incomingAmount"] = {
+                "value": str(incoming_amount),
+                "assetCode": asset_code,
+                "assetScale": asset_scale,
+            }
+        data = await self.execute(_CREATE_RECEIVER, {"input": input_obj})
+        receiver = (data.get("createReceiver") or {}).get("receiver")
+        if not receiver:
+            raise RafikiClientError("createReceiver returned no receiver")
+        return receiver
+
+    async def create_quote(
+        self,
+        *,
+        wallet_address_id: str,
+        receiver: str,
+        debit_amount: int,
+        asset_code: str,
+        asset_scale: int,
+    ) -> dict[str, Any]:
+        """Create a fixed-send quote (we specify how much to debit)."""
+        variables = {
+            "input": {
+                "walletAddressId": wallet_address_id,
+                "receiver": receiver,
+                "debitAmount": {
+                    "value": str(debit_amount),
+                    "assetCode": asset_code,
+                    "assetScale": asset_scale,
+                },
+            }
+        }
+        data = await self.execute(_CREATE_QUOTE, variables)
+        quote = (data.get("createQuote") or {}).get("quote")
+        if not quote:
+            raise RafikiClientError("createQuote returned no quote")
+        return quote
+
+    async def create_outgoing_payment(
+        self, *, wallet_address_id: str, quote_id: str
+    ) -> dict[str, Any]:
+        """Create an outgoing payment from a quote; returns the payment object."""
+        variables = {"input": {"walletAddressId": wallet_address_id, "quoteId": quote_id}}
+        data = await self.execute(_CREATE_OUTGOING_PAYMENT, variables)
+        payment = (data.get("createOutgoingPayment") or {}).get("payment")
+        if not payment:
+            raise RafikiClientError("createOutgoingPayment returned no payment")
+        return payment
+
+    async def deposit_event_liquidity(
+        self, *, event_id: str, idempotency_key: str | None = None
+    ) -> bool:
+        """Fund an event's liquidity (e.g. an outgoing payment on `.created`)."""
+        variables = {"eventId": event_id, "idempotencyKey": idempotency_key or str(uuid.uuid4())}
+        data = await self.execute(_DEPOSIT_EVENT_LIQUIDITY, variables)
+        return bool((data.get("depositEventLiquidity") or {}).get("success"))
+
+    async def withdraw_event_liquidity(
+        self, *, event_id: str, idempotency_key: str | None = None
+    ) -> bool:
+        """Withdraw an event's liquidity (e.g. received funds on incoming `.completed`)."""
+        variables = {"eventId": event_id, "idempotencyKey": idempotency_key or str(uuid.uuid4())}
+        data = await self.execute(_WITHDRAW_EVENT_LIQUIDITY, variables)
+        return bool((data.get("withdrawEventLiquidity") or {}).get("success"))

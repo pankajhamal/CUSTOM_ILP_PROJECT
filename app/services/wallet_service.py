@@ -1,4 +1,4 @@
-from fastapi import HTTPException, status
+from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 import logging
 from app.core.config import settings
@@ -29,14 +29,14 @@ async def create_wallet_address(
     #Get the required assetID
     asset_id = settings.RAFIKI_ASSET_ID
     base_url = settings.WALLET_ADDRESS_BASE_URL.rstrip("/")
-    address = f"{base_url}/{user.id}"
+    address = f"{base_url}/{user.username}"
     asset_code = settings.RAFIKI_ASSET_CODE
     asset_scale = settings.RAFIKI_ASSET_SCALE
 
     if not asset_id:
         raise HTTPException(
             status_code=500,
-            details="Default Rafiki asset_id is not configured"
+            detail="Default Rafiki asset_id is not configured",
         )
 
     #Create wallet address through Rafiki 

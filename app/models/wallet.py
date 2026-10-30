@@ -33,9 +33,9 @@ class WalletAddress(Base, TimestampMixin):
         String(64), unique=True, index=True, nullable=False
     )
     asset_code: Mapped[str] = mapped_column(String(8), nullable=False)
-    asset_scale: Mapped[int] = mapped_column(String(8), nullable=False)
+    asset_scale: Mapped[str] = mapped_column(String(8), nullable=False)
 
     user: Mapped[User] = relationship(back_populates="wallet_addresses")
 
     def __repr__(self) -> str:  # pragma: no cover - debugging aid
-        return f"<WalletAddress {self.address!r}>"
+        return f"<WalletAddress {self.wallet_address!r}>"

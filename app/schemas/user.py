@@ -7,6 +7,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
+from app.schemas.wallet import WalletAddressRead
+
 
 class UserCreate(BaseModel):
     """Payload to register a new account holder."""
@@ -41,3 +43,4 @@ class UserRead(BaseModel):
     is_active: bool
     created_at: datetime
     ledger_accounts: list[LedgerAccountRead] = []
+    wallet_addresses: list[WalletAddressRead] = []
