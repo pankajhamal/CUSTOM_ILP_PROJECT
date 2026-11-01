@@ -119,7 +119,17 @@ alembic/     async migrations (4 revisions)
 scripts/     simulate_webhook.py
 tests/       pytest suite (conftest with SQLite SAVEPOINT workaround)
 docs/        architecture.md + architecture.pdf
+frontend/    React + TypeScript + Tailwind client (Vite; see frontend/README.md)
 ```
+
+## Frontend
+
+```bash
+cd frontend && npm install && npm run dev   # http://localhost:5173
+```
+
+Minimal wallet UI: register/load account, balances, create wallet address,
+send money. Dev server proxies `/api` to the backend on :8000.
 
 ## Migrations
 

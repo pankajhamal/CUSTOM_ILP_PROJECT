@@ -1,32 +1,53 @@
-# React + TypeScript + Vite
+# Custom ILP Wallet — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Minimal React + TypeScript + Tailwind CSS client for the Custom ILP ASE backend.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Create / load account** — register a user (provisions ledger accounts) or
+  continue with an existing user id (kept in `localStorage`).
+- **Dashboard** — available & reserved balances, wallet address with copy,
+  refresh.
+- **Create wallet address** — one click, synced with Rafiki.
+- **Send money** — receiver URL or `$payment-pointer`, decimal amount
+  (converted to integer minor units), quote + payment status feedback.
 
-## React Compiler
+## Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Vite · React 19 · TypeScript (strict) · Tailwind CSS v4 (`@tailwindcss/vite`).
+No router, no state library — two screens and `fetch`.
 
-## Expanding the Oxlint configuration
+## Develop
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+# backend must be running on :8000 (docker compose up -d, or host uvicorn)
+npm install
+npm run dev          # http://localhost:5173
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+API calls go to `/api/v1/*` and the Vite dev server proxies them to
+`http://localhost:8000` (see `vite.config.ts`) — no CORS needed. To point at a
+different backend set `VITE_API_BASE`, e.g.:
+
+```bash
+VITE_API_BASE=http://localhost:8000/api/v1 npm run dev
+```
+
+## Build
+
+```bash
+npm run build        # typecheck + bundle to dist/
+npm run preview
+```
+
+## Layout
+
+```
+src/
+  lib/api.ts        typed API client (users, wallets, payments)
+  lib/money.ts      minor-unit formatting/parsing
+  components/ui.tsx Card, Button, Input, Field, Note, Spinner
+  screens/Onboard.tsx    register / load account
+  screens/Dashboard.tsx  balances, wallet, send money
+  App.tsx           session restore + screen switching
+```
